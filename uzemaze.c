@@ -32,7 +32,7 @@
 #define WHITE		0xFF
 #define RED		0x07
 #define CYAN		0xFB
-#define PURPPLE		0xC4
+#define PURPLE		0xC4
 #define GREEN		0x38
 #define BLUE		0xC0
 #define YELLOW		0x3E
@@ -45,19 +45,27 @@
 #define LIGHTBLUE	0xDA
 #define LIGHTGRAY	0xAD
 
+#define LEFT	0
+#define RIGHT	1
+#define UP	2
+#define DOWN	3
+
 #define RAMADDR(x,y) ((x*2)+(y*(SCREEN_WIDTH*2)))
 
-static const unsigned char COLORS[]={
+static const char COLORS[]={
 	BLACK,WHITE,RED,CYAN,
-	PURPPLE,GREEN,BLUE,YELLOW,
+	PURPLE,GREEN,BLUE,YELLOW,
 	ORANGE,BROWN,PINK,DARKGRAY,
 	MIDGRAY,LIGHTGREEN,LIGHTBLUE,LIGHTGRAY };
-static const unsigned char HEXTBL[] = {
+static const char HEXTBL[] = {
 	'0','1','2','3','4','5','6','7','8','9',1,2,3,4,5,6};
 
+unsigned char cursorx, cursory, bgcolor, curlvl;
+
+unsigned int lvlindex, remflds;
 
 
-void printhex(unsigned char x, unsigned char y, unsigned char c) {
+void printhex(unsigned char x, unsigned char y, char c) {
 	PrintChar(x, y, HEXTBL[c>>4]);
 	PrintChar(x+1,y,HEXTBL[c&0x0F]);
 }
@@ -72,7 +80,7 @@ void printstr(unsigned char x, unsigned char y, char *str) {
 		PrintChar(x++, y, ch);
 	}
 }
-void printstrfg(unsigned char x, unsigned char y, char *str, unsigned char fgcol) {
+void printstrfg(unsigned char x, unsigned char y, char *str, char fgcol) {
 	unsigned int cnt=0;
 	unsigned char ch;
 
@@ -84,7 +92,7 @@ void printstrfg(unsigned char x, unsigned char y, char *str, unsigned char fgcol
 	}
 }
 
-void resetPlayfield(unsigned char CurrLvl) {
+void resetPlayfield() {
 	unsigned char x, y;
 
 	for (y=0; y<25; y++)
@@ -101,8 +109,24 @@ void resetPlayfield(unsigned char CurrLvl) {
 
 	printstrfg((SCREEN_WIDTH/2)-(4),0,"UZEMAZE", RED);
 	printstrfg((SCREEN_WIDTH-8),0,"LVL:   ", RED);
-	PrintByte(SCREEN_WIDTH-2, 0, CurrLvl, true);
+	PrintByte(SCREEN_WIDTH-2, 0, curlvl, true);
 	printstrfg((SCREEN_WIDTH/2)-15,24,"DPAD=MOVE B=NEXT SELECT=RESET", RED);
+}
+
+void nextbgcolor() {
+	switch (bgcolor) {
+		case WHITE:	bgcolor=RED;	break;
+		case RED:	bgcolor=CYAN;	break;
+		case CYAN:	bgcolor=PURPLE;	break;
+		case PURPLE:	bgcolor=GREEN;	break;
+		case GREEN:	bgcolor=BLUE;	break;
+		case BLUE:	bgcolor=YELLOW;	break;
+		case YELLOW:	bgcolor=ORANGE; break;
+		case ORANGE:	bgcolor=PINK;	break;
+		case PINK:	bgcolor=LIGHTGREEN; break;
+		case LIGHTGREEN:bgcolor=LIGHTBLUE; break;
+		case LIGHTBLUE:	bgcolor=WHITE;	break;
+	}
 }
 
 void splashscreen() {
@@ -127,81 +151,119 @@ void splashscreen() {
 
 	while (btn != BTN_SELECT) {
 		WaitVsync(1);
+		nextbgcolor();
 		btn=ReadJoypad(0);
 	}
-
 }
 
-int seeklevel(unsigned char level) {
+void seeklevel() {
 	struct level *lvlptr;
-	int lvlindex=0;
 	unsigned char lvl=1;
 
-	lvlptr = levels + lvlindex;
-	while (level != lvl++) {
-		if (lvlptr->size == 0) return (-1);
+	lvlindex=0;
+
+	lvlptr = (struct level *)(levels + lvlindex);
+	while (curlvl != lvl++) {
+		if (lvlptr->size == 0) {
+			curlvl=1;
+			lvlindex=0;
+			return;
+		}
 		lvlindex = lvlindex + (int)lvlptr->size;
-		lvlptr = levels + lvlindex;
+		lvlptr = (struct level *)(levels + lvlindex);
 	}
-	if (lvlptr->size==0) return (-1);
-	return (lvlindex);
+	if (lvlptr->size==0) {
+		curlvl=1;
+		lvlindex=0;
+		return;
+	}
 }
 
-void drawlevel(int lvlindex) {
+void drawlevel() {
 	struct level *lvlptr;
 	unsigned char *data;
+	unsigned char ch, bitcnt;
+	unsigned char offsetx, offsety, datacnt;
+	unsigned char curx, cury;
+	
+	remflds=0;
 
-	lvlptr = levels + lvlindex;
+	SetBorderColor(bgcolor);
 
-	PrintByte(10, 10, (char)lvlptr->size, true);
-	PrintByte(10, 11, (char)lvlptr->width, true);
-	PrintByte(10, 12, (char)lvlptr->height, true);
-	PrintByte(10, 13, (char)lvlptr->startx, true);
-	PrintByte(10, 14, (char)lvlptr->starty, true);
+	lvlptr = (struct level *)(levels + lvlindex);
+	data = (unsigned char *)&lvlptr->data;
 
+	offsetx = (SCREEN_WIDTH/2)-(lvlptr->width/2);
+	offsety = (SCREEN_HEIGHT/2)-(lvlptr->height/2);
 
+	datacnt=0;
+	bitcnt=0;
+	ch=data[datacnt++];
+	for (cury=offsety; cury<offsety+lvlptr->height; cury++) {
+		if (bitcnt!=0) {
+			ch = data[datacnt++];
+			bitcnt=0;
+		}
+		for (curx=offsetx; curx<offsetx+lvlptr->width; curx++) {
+			if ((ch & 0x80) == 0) {
+				aram[RAMADDR(curx, cury)]=BLACK;
+				remflds++;
+			}
+			ch = ch<<1;
+			if (++bitcnt == 8) {
+				ch = data[datacnt++];
+				bitcnt=0;
+			}
+		}
+	}
+
+	cursorx = offsetx+lvlptr->startx;
+	cursory = offsety+lvlptr->starty;
+
+	PrintChar(cursorx, cursory, 0x57);
+	aram[RAMADDR(cursorx, cursory)]=bgcolor;
+	remflds--;
+}
+
+void do_move(char dir) {
+ switch (dir) {
+	case RIGHT:
+		break;
+	case LEFT:
+		break;
+	case UP:
+		break;
+	case DOWN:
+		break;
+ }
 }
 
 int main(){
 	unsigned int btn;
-	unsigned char CurrLvl=1;
-	unsigned int lvlindex;
 
+	curlvl=1;
+	bgcolor=WHITE;
 
 	ClearVram();
 	SetBorderColor(LIGHTGRAY);
 	splashscreen();
-	SetBorderColor(DARKGRAY);
-	resetPlayfield(CurrLvl);
-	
-	lvlindex = seeklevel(1);
-	if (lvlindex != -1)
-		drawlevel(lvlindex);
 
-	while(1) {
-		WaitVsync(1);
-/*		btn = ReadJoypad(0);
-		if (btn & BTN_RIGHT) PrintChar(10, 10, 'R'-0x40); 
-		else PrintChar(10, 10, ' ');
-		if (btn & BTN_LEFT)  PrintChar(8, 10, 'L'-0x40);
-		else PrintChar(8,10, ' ');
-		if (btn & BTN_UP)    PrintChar(9, 9, 'U'-0x40);
-		else PrintChar(9, 9, ' ');
-		if (btn & BTN_DOWN)  PrintChar(9, 11, 'D'-0x40);
-		else PrintChar(9, 11, ' ');
-		if (btn & BTN_Y)     PrintChar(16, 10, 'Y'-0x40);
-		else PrintChar(16,10, ' ');
-		if (btn & BTN_A)     PrintChar(18, 10, 'A'-0x40);
-		else PrintChar(18, 10, ' ');
-		if (btn & BTN_X)     PrintChar(17, 9, 'X'-0x40);
-		else PrintChar(17, 9, ' ');
-		if (btn & BTN_B)     PrintChar(17, 11, 'B'-0x40);
-		else PrintChar(17, 11, ' ');
-		if (btn & BTN_SELECT) PrintChar(12, 10, 'L'-0x40);
-		else PrintChar(12, 10, ' ');
-		if (btn & BTN_START) PrintChar(14, 10, 'S'-0x40);
-		else PrintChar(14, 10, ' ');*/
+	while (1) {
+		seeklevel();
+		resetPlayfield();
+		drawlevel();
+		btn=0;
+		while (btn != BTN_SELECT) {
+			WaitVsync(1);
+			btn=ReadJoypad(0);
+			if (btn & BTN_RIGHT) 
+				do_move(RIGHT);
+			else if (btn & BTN_LEFT)
+				do_move(LEFT);
+			else if (btn & BTN_UP)
+				do_move(UP);
+			else if (btn & BTN_DOWN)
+				do_move(DOWN);
+		}
 	}
-
-
 }
