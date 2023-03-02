@@ -149,30 +149,31 @@ void splashscreen() {
 	printstrfg((SCREEN_WIDTH/2)-11, 19, "(JIMMY@DANSBO.DK)  2023", GREEN);
 	printstrfg((SCREEN_WIDTH/2)-15, 21, "HTTPS://GITHUB.COM/JIMMYDANSBO/", LIGHTGREEN);
 
-	while (btn != BTN_SELECT) {
+	while (btn != BTN_START) {
 		WaitVsync(1);
 		nextbgcolor();
 		btn=ReadJoypad(0);
 	}
 }
 
+unsigned char levelbyte(unsigned int index) {
+	return (pgm_read_byte(&(levels[index])));
+}
+
 void seeklevel() {
-	struct level *lvlptr;
 	unsigned char lvl=1;
 
-	lvlindex=0;
+	lvlindex = 0;
 
-	lvlptr = (struct level *)(levels + lvlindex);
-	while (curlvl != lvl++) {
-		if (lvlptr->size == 0) {
+	while (lvl++ != curlvl) {
+		if (levelbyte(lvlindex)==0) {
 			curlvl=1;
 			lvlindex=0;
 			return;
 		}
-		lvlindex = lvlindex + (int)lvlptr->size;
-		lvlptr = (struct level *)(levels + lvlindex);
+		lvlindex += levelbyte(lvlindex);
 	}
-	if (lvlptr->size==0) {
+	if (levelbyte(lvlindex)==0) {
 		curlvl=1;
 		lvlindex=0;
 		return;
@@ -180,45 +181,40 @@ void seeklevel() {
 }
 
 void drawlevel() {
-	struct level *lvlptr;
-	unsigned char *data;
 	unsigned char ch, bitcnt;
 	unsigned char offsetx, offsety, datacnt;
 	unsigned char curx, cury;
-	
+
 	remflds=0;
 
 	SetBorderColor(bgcolor);
 
-	lvlptr = (struct level *)(levels + lvlindex);
-	data = (unsigned char *)&lvlptr->data;
-
-	offsetx = (SCREEN_WIDTH/2)-(lvlptr->width/2);
-	offsety = (SCREEN_HEIGHT/2)-(lvlptr->height/2);
+	offsetx = (SCREEN_WIDTH/2)-(levelbyte(lvlindex+1)/2);
+	offsety = (SCREEN_HEIGHT/2)-(levelbyte (lvlindex+2)/2);
 
 	datacnt=0;
 	bitcnt=0;
-	ch=data[datacnt++];
-	for (cury=offsety; cury<offsety+lvlptr->height; cury++) {
+	ch=levelbyte(lvlindex+5+datacnt++);
+	for (cury=offsety; cury<offsety+levelbyte(lvlindex+2); cury++) {
 		if (bitcnt!=0) {
-			ch = data[datacnt++];
+			ch = levelbyte(lvlindex+5+datacnt++);
 			bitcnt=0;
 		}
-		for (curx=offsetx; curx<offsetx+lvlptr->width; curx++) {
+		for (curx=offsetx; curx<offsetx+levelbyte(lvlindex+1); curx++) {
 			if ((ch & 0x80) == 0) {
 				aram[RAMADDR(curx, cury)]=BLACK;
 				remflds++;
 			}
 			ch = ch<<1;
 			if (++bitcnt == 8) {
-				ch = data[datacnt++];
+				ch = levelbyte(lvlindex+5+datacnt++);
 				bitcnt=0;
 			}
 		}
 	}
 
-	cursorx = offsetx+lvlptr->startx;
-	cursory = offsety+lvlptr->starty;
+	cursorx = offsetx+levelbyte(lvlindex+3);
+	cursory = offsety+levelbyte(lvlindex+4);
 
 	PrintChar(cursorx, cursory, 0x57);
 	aram[RAMADDR(cursorx, cursory)]=bgcolor;
@@ -238,10 +234,14 @@ void do_move(char dir) {
  }
 }
 
+void show_win() {
+
+}
+
 int main(){
 	unsigned int btn;
 
-	curlvl=1;
+	curlvl=8;
 	bgcolor=WHITE;
 
 	ClearVram();
@@ -249,8 +249,9 @@ int main(){
 	splashscreen();
 
 	while (1) {
-		seeklevel();
+//		seeklevel();
 		resetPlayfield();
+		seeklevel();
 		drawlevel();
 		btn=0;
 		while (btn != BTN_SELECT) {
@@ -264,6 +265,11 @@ int main(){
 				do_move(UP);
 			else if (btn & BTN_DOWN)
 				do_move(DOWN);
+			if (remflds==0) {
+				show_win();
+				curlvl++;
+				btn=BTN_SELECT;
+			}
 		}
 	}
 }
