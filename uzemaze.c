@@ -50,7 +50,7 @@
 #define UP	2
 #define DOWN	3
 
-#define RAMADDR(x,y) ((x*2)+(y*(SCREEN_WIDTH*2)))
+#define WALLCOL		LIGHTGRAY
 
 static const char COLORS[]={
 	BLACK,WHITE,RED,CYAN,
@@ -61,9 +61,11 @@ static const char HEXTBL[] = {
 	'0','1','2','3','4','5','6','7','8','9',1,2,3,4,5,6};
 
 unsigned char cursorx, cursory, bgcolor, curlvl;
-
 unsigned int lvlindex, remflds;
 
+unsigned int ramaddr(char x, char y) {
+	return ((x*2)+(y*(SCREEN_WIDTH*2)));
+}
 
 void printhex(unsigned char x, unsigned char y, char c) {
 	PrintChar(x, y, HEXTBL[c>>4]);
@@ -87,7 +89,19 @@ void printstrfg(unsigned char x, unsigned char y, char *str, char fgcol) {
 	while (str[cnt]!=0) {
 		ch = str[cnt++];
 		if (ch > 0x3F) ch=ch-0x40;
-		aram[RAMADDR(x,y)+1]=fgcol;
+		aram[ramaddr(x,y)+1]=fgcol;
+		PrintChar(x++, y, ch);
+	}
+}
+void printstrcol(unsigned char x, unsigned char y, char *str, char fgc, char bgc) {
+	unsigned int cnt=0;
+	unsigned char ch;
+
+	while (str[cnt]!=0) {
+		ch = str[cnt++];
+		if (ch > 0x3F) ch=ch-0x40;
+		aram[ramaddr(x,y)+1]=fgc;
+		aram[ramaddr(x,y)]=bgc;
 		PrintChar(x++, y, ch);
 	}
 }
@@ -98,13 +112,13 @@ void resetPlayfield() {
 	for (y=0; y<25; y++)
 		for (x=0; x<40; x++) {
 			PrintChar(x, y, 0x20);
-			aram[RAMADDR(x, y)]=WHITE;
+			aram[ramaddr(x, y)]=WHITE;
 		}
 	for (y=1; y<24; y++)
 		for (x=1; x<39; x++) {
 			PrintChar(x, y, 0x20);
-			aram[RAMADDR(x, y)]=LIGHTGRAY;
-			aram[RAMADDR(x, y)+1]=BLACK;
+			aram[ramaddr(x, y)]=WALLCOL;
+			aram[ramaddr(x, y)+1]=BLACK;
 		}
 
 	printstrfg((SCREEN_WIDTH/2)-(4),0,"UZEMAZE", RED);
@@ -136,7 +150,7 @@ void splashscreen() {
 	for (y=0;y<25;y++)
 		for (x=0;x<40;x++) {
 			PrintChar(x, y, ' ');
-			aram[RAMADDR(x, y)]=BLACK;
+			aram[ramaddr(x, y)]=BLACK;
 		}
 	
 	printstrfg(3, 5,  "*  * **** **** *  *  **  **** ****", ORANGE);
@@ -202,7 +216,7 @@ void drawlevel() {
 		}
 		for (curx=offsetx; curx<offsetx+levelbyte(lvlindex+1); curx++) {
 			if ((ch & 0x80) == 0) {
-				aram[RAMADDR(curx, cury)]=BLACK;
+				aram[ramaddr(curx, cury)]=BLACK;
 				remflds++;
 			}
 			ch = ch<<1;
@@ -217,31 +231,75 @@ void drawlevel() {
 	cursory = offsety+levelbyte(lvlindex+4);
 
 	PrintChar(cursorx, cursory, 0x57);
-	aram[RAMADDR(cursorx, cursory)]=bgcolor;
+	aram[ramaddr(cursorx, cursory)]=bgcolor;
 	remflds--;
 }
 
 void do_move(char dir) {
  switch (dir) {
 	case RIGHT:
+		while (aram[ramaddr(cursorx+1, cursory)]!=WALLCOL) {
+			cursorx++;
+			PrintChar(cursorx-1, cursory, ' ');
+			if (aram[ramaddr(cursorx, cursory)]==BLACK) remflds--;
+			PrintChar(cursorx, cursory, 0x57);
+			aram[ramaddr(cursorx, cursory)]=bgcolor;
+			WaitVsync(1);
+		}
 		break;
 	case LEFT:
+		while (aram[ramaddr(cursorx-1, cursory)]!=WALLCOL) {
+			cursorx--;
+			PrintChar(cursorx+1, cursory, ' ');
+			if (aram[ramaddr(cursorx, cursory)]==BLACK) remflds--;
+			PrintChar(cursorx, cursory, 0x57);
+			aram[ramaddr(cursorx, cursory)]=bgcolor;
+			WaitVsync(1);
+		}
 		break;
 	case UP:
+		while (aram[ramaddr(cursorx, cursory-1)]!=WALLCOL) {
+			cursory--;
+			PrintChar(cursorx, cursory+1, ' ');
+			if (aram[ramaddr(cursorx, cursory)]==BLACK) remflds--;
+			PrintChar(cursorx, cursory, 0x57);
+			aram[ramaddr(cursorx, cursory)]=bgcolor;
+			WaitVsync(1);
+		}
 		break;
 	case DOWN:
+		while (aram[ramaddr(cursorx, cursory+1)]!=WALLCOL) {
+			cursory++;
+			PrintChar(cursorx, cursory-1, ' ');
+			if (aram[ramaddr(cursorx, cursory)]==BLACK) remflds--;
+			PrintChar(cursorx, cursory, 0x57);
+			aram[ramaddr(cursorx, cursory)]=bgcolor;
+			WaitVsync(1);
+		}
 		break;
  }
 }
 
 void show_win() {
+	unsigned int btn=0;
 
+	printstrcol(10, 10, "*******************", ORANGE, BLACK);
+	printstrcol(10, 11, "*                 *", ORANGE, BLACK);
+	printstrcol(10, 12, "* LEVEL COMPLETED *", ORANGE, BLACK);
+	printstrcol(10, 13, "*                 *", ORANGE, BLACK);
+	printstrcol(10, 14, "*******************", ORANGE, BLACK);
+
+	while (btn != BTN_B) {
+		WaitVsync(10);
+		nextbgcolor();
+		SetBorderColor(bgcolor);
+		btn=ReadJoypad(0);
+	}
 }
 
 int main(){
 	unsigned int btn;
-
-	curlvl=8;
+	curlvl=1;
 	bgcolor=WHITE;
 
 	ClearVram();
@@ -249,9 +307,8 @@ int main(){
 	splashscreen();
 
 	while (1) {
-//		seeklevel();
-		resetPlayfield();
 		seeklevel();
+		resetPlayfield();
 		drawlevel();
 		btn=0;
 		while (btn != BTN_SELECT) {
