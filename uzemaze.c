@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdio.h>
 #include <stdbool.h>
 #include <avr/io.h>
 #include <stdlib.h>
@@ -61,7 +62,7 @@ static const char HEXTBL[] = {
 	'0','1','2','3','4','5','6','7','8','9',1,2,3,4,5,6};
 
 unsigned char cursorx, cursory, bgcolor, curlvl;
-unsigned int lvlindex, remflds, myTimer;
+unsigned int lvlindex, remflds, myTimer, MoveCnt;
 
 unsigned int ramaddr(char x, char y) {
 	return ((x*2)+(y*(SCREEN_WIDTH*2)));
@@ -237,13 +238,16 @@ void drawlevel() {
 	remflds--;
 	PrintByte(8, 0, remflds, true);
 	myTimer=0;
+	MoveCnt=0;
 }
 
 void do_move(char dir) {
+	char moved=false;
  switch (dir) {
 	case RIGHT:
 		while (aram[ramaddr(cursorx+1, cursory)]!=WALLCOL) {
 			cursorx++;
+			moved=true;
 			PrintChar(cursorx-1, cursory, ' ');
 			if (aram[ramaddr(cursorx, cursory)]==BLACK) {
 				remflds--;
@@ -257,6 +261,7 @@ void do_move(char dir) {
 	case LEFT:
 		while (aram[ramaddr(cursorx-1, cursory)]!=WALLCOL) {
 			cursorx--;
+			moved=true;
 			PrintChar(cursorx+1, cursory, ' ');
 			if (aram[ramaddr(cursorx, cursory)]==BLACK) {
 				remflds--;
@@ -270,6 +275,7 @@ void do_move(char dir) {
 	case UP:
 		while (aram[ramaddr(cursorx, cursory-1)]!=WALLCOL) {
 			cursory--;
+			moved=true;
 			PrintChar(cursorx, cursory+1, ' ');
 			if (aram[ramaddr(cursorx, cursory)]==BLACK) {
 				remflds--;
@@ -283,6 +289,7 @@ void do_move(char dir) {
 	case DOWN:
 		while (aram[ramaddr(cursorx, cursory+1)]!=WALLCOL) {
 			cursory++;
+			moved=true;
 			PrintChar(cursorx, cursory-1, ' ');
 			if (aram[ramaddr(cursorx, cursory)]==BLACK) {
 				remflds--;
@@ -294,6 +301,7 @@ void do_move(char dir) {
 		}
 		break;
  }
+ if (moved) MoveCnt++;
 }
 
 void show_win() {
@@ -314,13 +322,16 @@ void show_win() {
 
 	sprintf(str, "* %02d HR %02d MIN %02d SEC %03d MSEC *",hour,minute,second,msec);
 
-	printstrcol(4, 8,  "********************************", ORANGE, BLACK);
-	printstrcol(4, 9,  "*                              *", ORANGE, BLACK);
-	printstrcol(4, 10, "*       LEVEL COMPLETED        *", ORANGE, BLACK);
+	printstrcol(4, 6,  "********************************", ORANGE, BLACK);
+	printstrcol(4, 7,  "*                              *", ORANGE, BLACK);
+	printstrcol(4, 8,  "*       LEVEL COMPLETED        *", ORANGE, BLACK);
+	printstrcol(4, 9, "*                              *", ORANGE, BLACK);
+	printstrcol(4, 10, str, ORANGE, BLACK);
 	printstrcol(4, 11, "*                              *", ORANGE, BLACK);
-	printstrcol(4, 12, str, ORANGE, BLACK);
 	printstrcol(4, 13, "*                              *", ORANGE, BLACK);
 	printstrcol(4, 14, "********************************", ORANGE, BLACK);
+	sprintf(str,"*          %04d MOVES          *",MoveCnt);
+	printstrcol(4, 12, str, ORANGE,BLACK);
 
 	while (btn != BTN_B) {
 		WaitVsync(10);
@@ -335,7 +346,9 @@ void myCallbackFunc(void) {
 }
 
 int main(){
-	unsigned int btn;
+	unsigned int btnPressed;
+	unsigned int btnHeld=0;
+	unsigned int btnPrev=0;
 	curlvl=1;
 	bgcolor=WHITE;
 
@@ -349,22 +362,26 @@ int main(){
 		seeklevel();
 		resetPlayfield();
 		drawlevel();
-		btn=0;
-		while (btn != BTN_SELECT) {
+		btnPressed=0;
+		while (btnPressed != BTN_SELECT) {
 			WaitVsync(1);
-			btn=ReadJoypad(0);
-			if (btn & BTN_RIGHT) 
+
+			btnHeld = ReadJoypad(0);
+			btnPressed = btnHeld & (btnHeld ^ btnPrev);
+
+			if (btnPressed & BTN_RIGHT) 
 				do_move(RIGHT);
-			else if (btn & BTN_LEFT)
+			else if (btnPressed & BTN_LEFT)
 				do_move(LEFT);
-			else if (btn & BTN_UP)
+			else if (btnPressed & BTN_UP)
 				do_move(UP);
-			else if (btn & BTN_DOWN)
+			else if (btnPressed & BTN_DOWN)
 				do_move(DOWN);
+			btnPrev = btnHeld;
 			if (remflds==0) {
 				show_win();
 				curlvl++;
-				btn=BTN_SELECT;
+				btnPressed=BTN_SELECT;
 			}
 		}
 	}
