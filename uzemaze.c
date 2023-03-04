@@ -61,7 +61,7 @@ static const char HEXTBL[] = {
 	'0','1','2','3','4','5','6','7','8','9',1,2,3,4,5,6};
 
 unsigned char cursorx, cursory, bgcolor, curlvl;
-unsigned int lvlindex, remflds;
+unsigned int lvlindex, remflds, myTimer;
 
 unsigned int ramaddr(char x, char y) {
 	return ((x*2)+(y*(SCREEN_WIDTH*2)));
@@ -121,6 +121,8 @@ void resetPlayfield() {
 			aram[ramaddr(x, y)+1]=BLACK;
 		}
 
+	printstrfg(1,0,"FLDS:      ", RED);
+	PrintByte(8,0,0,true);
 	printstrfg((SCREEN_WIDTH/2)-(4),0,"UZEMAZE", RED);
 	printstrfg((SCREEN_WIDTH-8),0,"LVL:   ", RED);
 	PrintByte(SCREEN_WIDTH-2, 0, curlvl, true);
@@ -233,6 +235,8 @@ void drawlevel() {
 	PrintChar(cursorx, cursory, 0x57);
 	aram[ramaddr(cursorx, cursory)]=bgcolor;
 	remflds--;
+	PrintByte(8, 0, remflds, true);
+	myTimer=0;
 }
 
 void do_move(char dir) {
@@ -241,7 +245,10 @@ void do_move(char dir) {
 		while (aram[ramaddr(cursorx+1, cursory)]!=WALLCOL) {
 			cursorx++;
 			PrintChar(cursorx-1, cursory, ' ');
-			if (aram[ramaddr(cursorx, cursory)]==BLACK) remflds--;
+			if (aram[ramaddr(cursorx, cursory)]==BLACK) {
+				remflds--;
+				PrintByte(8, 0, remflds, true);
+			}
 			PrintChar(cursorx, cursory, 0x57);
 			aram[ramaddr(cursorx, cursory)]=bgcolor;
 			WaitVsync(1);
@@ -251,7 +258,10 @@ void do_move(char dir) {
 		while (aram[ramaddr(cursorx-1, cursory)]!=WALLCOL) {
 			cursorx--;
 			PrintChar(cursorx+1, cursory, ' ');
-			if (aram[ramaddr(cursorx, cursory)]==BLACK) remflds--;
+			if (aram[ramaddr(cursorx, cursory)]==BLACK) {
+				remflds--;
+				PrintByte(8, 0, remflds, true);
+			}
 			PrintChar(cursorx, cursory, 0x57);
 			aram[ramaddr(cursorx, cursory)]=bgcolor;
 			WaitVsync(1);
@@ -261,7 +271,10 @@ void do_move(char dir) {
 		while (aram[ramaddr(cursorx, cursory-1)]!=WALLCOL) {
 			cursory--;
 			PrintChar(cursorx, cursory+1, ' ');
-			if (aram[ramaddr(cursorx, cursory)]==BLACK) remflds--;
+			if (aram[ramaddr(cursorx, cursory)]==BLACK) {
+				remflds--;
+				PrintByte(8, 0, remflds, true);
+			}
 			PrintChar(cursorx, cursory, 0x57);
 			aram[ramaddr(cursorx, cursory)]=bgcolor;
 			WaitVsync(1);
@@ -271,7 +284,10 @@ void do_move(char dir) {
 		while (aram[ramaddr(cursorx, cursory+1)]!=WALLCOL) {
 			cursory++;
 			PrintChar(cursorx, cursory-1, ' ');
-			if (aram[ramaddr(cursorx, cursory)]==BLACK) remflds--;
+			if (aram[ramaddr(cursorx, cursory)]==BLACK) {
+				remflds--;
+				PrintByte(8, 0, remflds, true);
+			}
 			PrintChar(cursorx, cursory, 0x57);
 			aram[ramaddr(cursorx, cursory)]=bgcolor;
 			WaitVsync(1);
@@ -282,12 +298,29 @@ void do_move(char dir) {
 
 void show_win() {
 	unsigned int btn=0;
+	unsigned char hour, minute, second;
+	unsigned int msec, curtimer;
+	char str[40];
 
-	printstrcol(10, 10, "*******************", ORANGE, BLACK);
-	printstrcol(10, 11, "*                 *", ORANGE, BLACK);
-	printstrcol(10, 12, "* LEVEL COMPLETED *", ORANGE, BLACK);
-	printstrcol(10, 13, "*                 *", ORANGE, BLACK);
-	printstrcol(10, 14, "*******************", ORANGE, BLACK);
+	curtimer=myTimer;
+
+	hour = curtimer/60/60/60;
+	curtimer=curtimer-(hour*60*60*60);
+	minute = curtimer/60/60;
+	curtimer=curtimer-(minute*60*60);
+	second = curtimer/60;
+	curtimer=curtimer-(second*60);
+	msec=curtimer*(1000/60);
+
+	sprintf(str, "* %02d HR %02d MIN %02d SEC %03d MSEC *",hour,minute,second,msec);
+
+	printstrcol(4, 8,  "********************************", ORANGE, BLACK);
+	printstrcol(4, 9,  "*                              *", ORANGE, BLACK);
+	printstrcol(4, 10, "*       LEVEL COMPLETED        *", ORANGE, BLACK);
+	printstrcol(4, 11, "*                              *", ORANGE, BLACK);
+	printstrcol(4, 12, str, ORANGE, BLACK);
+	printstrcol(4, 13, "*                              *", ORANGE, BLACK);
+	printstrcol(4, 14, "********************************", ORANGE, BLACK);
 
 	while (btn != BTN_B) {
 		WaitVsync(10);
@@ -297,6 +330,10 @@ void show_win() {
 	}
 }
 
+void myCallbackFunc(void) {
+	myTimer++;
+}
+
 int main(){
 	unsigned int btn;
 	curlvl=1;
@@ -304,6 +341,8 @@ int main(){
 
 	ClearVram();
 	SetBorderColor(LIGHTGRAY);
+	SetUserPreVsyncCallback(&myCallbackFunc);
+
 	splashscreen();
 
 	while (1) {
