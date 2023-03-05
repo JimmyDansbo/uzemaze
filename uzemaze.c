@@ -1,21 +1,3 @@
-/*
- *  Uzebox video mode 40 simple demo
- *  Copyright (C) 2017 Sandor Zsuga (Jubatian)
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <avr/io.h>
@@ -334,10 +316,44 @@ void show_win() {
 	printstrcol(4, 12, str, ORANGE,BLACK);
 
 	while (btn != BTN_B) {
-		WaitVsync(10);
+		WaitVsync(13);
 		nextbgcolor();
 		SetBorderColor(bgcolor);
 		btn=ReadJoypad(0);
+	}
+}
+
+void select_level() {
+	unsigned int btnPressed=0;
+	unsigned int btnHeld=0;
+	unsigned int btnPrev=0;
+	char str[6];
+
+	printstrcol(12, 9, "*****************", ORANGE, BLACK);
+	printstrcol(12,10, "*               *", ORANGE, BLACK);
+	printstrcol(12,11, "* SELECT LEVEL: *", ORANGE, BLACK);
+	printstrcol(12,12, "*               *", ORANGE, BLACK);
+	printstrcol(12,13, "*               *", ORANGE, BLACK);
+	printstrcol(12,14, "*               *", ORANGE, BLACK);
+	printstrcol(12,15, "*****************", ORANGE, BLACK);
+	sprintf(str, "%03d", curlvl);
+	printstr(19, 13, str);
+
+	while (btnPressed != BTN_SELECT) {
+		WaitVsync(1);
+		btnHeld = ReadJoypad(0);
+		btnPressed = btnHeld & (btnHeld ^ btnPrev);
+
+		if (btnPressed & BTN_DOWN) {
+			if (--curlvl == 0) curlvl=MAX_LEVELS;
+			sprintf(str, "%03d", curlvl);
+			printstr(19, 13, str);
+		} else if (btnPressed & BTN_UP) {
+			if (++curlvl > MAX_LEVELS) curlvl=1;
+			sprintf(str, "%03d", curlvl);
+			printstr(19, 13, str);
+		}
+		btnPrev = btnHeld;
 	}
 }
 
@@ -377,6 +393,10 @@ int main(){
 				do_move(UP);
 			else if (btnPressed & BTN_DOWN)
 				do_move(DOWN);
+			else if (btnPressed & BTN_X) {
+				select_level();
+				btnPressed=BTN_SELECT;
+			}
 			btnPrev = btnHeld;
 			if (remflds==0) {
 				show_win();
