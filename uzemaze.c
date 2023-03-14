@@ -35,29 +35,16 @@
 
 #define WALLCOL		LIGHTGRAY
 
-static const char COLORS[]={
-	BLACK,WHITE,RED,CYAN,
-	PURPLE,GREEN,BLUE,YELLOW,
-	ORANGE,BROWN,PINK,DARKGRAY,
-	MIDGRAY,LIGHTGREEN,LIGHTBLUE,LIGHTGRAY };
-static const char HEXTBL[] = {
-	'0','1','2','3','4','5','6','7','8','9',1,2,3,4,5,6};
+u8 cursorx, cursory, bgcolor, curlvl;
+u16 lvlindex, remflds, myTimer, MoveCnt;
 
-unsigned char cursorx, cursory, bgcolor, curlvl;
-unsigned int lvlindex, remflds, myTimer, MoveCnt;
-
-unsigned int ramaddr(char x, char y) {
+static u16 ramaddr(u8 x, u8 y) {
 	return ((x*2)+(y*(SCREEN_WIDTH*2)));
 }
 
-void printhex(unsigned char x, unsigned char y, char c) {
-	PrintChar(x, y, HEXTBL[c>>4]);
-	PrintChar(x+1,y,HEXTBL[c&0x0F]);
-}
-
-void printstr(unsigned char x, unsigned char y, char *str) {
-	unsigned int cnt=0;
-	unsigned char ch;
+static void printstr(u8 x, u8 y, char *str) {
+	u16 cnt=0;
+	u8 ch;
 
 	while (str[cnt]!=0) {
 		ch = str[cnt++];
@@ -65,9 +52,9 @@ void printstr(unsigned char x, unsigned char y, char *str) {
 		PrintChar(x++, y, ch);
 	}
 }
-void printstrfg(unsigned char x, unsigned char y, char *str, char fgcol) {
-	unsigned int cnt=0;
-	unsigned char ch;
+static void printstrfg(u8 x, u8 y, char *str, u8 fgcol) {
+	u16 cnt=0;
+	u8 ch;
 
 	while (str[cnt]!=0) {
 		ch = str[cnt++];
@@ -76,9 +63,9 @@ void printstrfg(unsigned char x, unsigned char y, char *str, char fgcol) {
 		PrintChar(x++, y, ch);
 	}
 }
-void printstrcol(unsigned char x, unsigned char y, char *str, char fgc, char bgc) {
-	unsigned int cnt=0;
-	unsigned char ch;
+static void printstrcol(u8 x, u8 y, char *str, u8 fgc, u8 bgc) {
+	u16 cnt=0;
+	u8 ch;
 
 	while (str[cnt]!=0) {
 		ch = str[cnt++];
@@ -89,8 +76,8 @@ void printstrcol(unsigned char x, unsigned char y, char *str, char fgc, char bgc
 	}
 }
 
-void resetPlayfield() {
-	unsigned char x, y;
+static void resetPlayfield() {
+	u8 x, y;
 
 	for (y=0; y<25; y++)
 		for (x=0; x<40; x++) {
@@ -112,7 +99,7 @@ void resetPlayfield() {
 	printstrfg((SCREEN_WIDTH/2)-15,24,"DPAD=MOVE B=NEXT SELECT=RESET", RED);
 }
 
-void nextbgcolor() {
+static void nextbgcolor() {
 	switch (bgcolor) {
 		case WHITE:	bgcolor=RED;	break;
 		case RED:	bgcolor=CYAN;	break;
@@ -128,9 +115,9 @@ void nextbgcolor() {
 	}
 }
 
-void splashscreen() {
-	unsigned char x, y;
-	unsigned int btn=0;
+static void splashscreen() {
+	u8 x, y;
+	u16 btn=0;
 
 	for (y=0;y<25;y++)
 		for (x=0;x<40;x++) {
@@ -155,65 +142,61 @@ void splashscreen() {
 	}
 }
 
-unsigned char levelbyte(unsigned int index) {
-	return (pgm_read_byte(&(levels[index])));
-}
-
-void seeklevel() {
-	unsigned char lvl=1;
+static void seeklevel() {
+	u8 lvl=1;
 
 	lvlindex = 0;
 
 	while (lvl++ != curlvl) {
-		if (levelbyte(lvlindex)==0) {
+		if (levels[lvlindex]==0) {
 			curlvl=1;
 			lvlindex=0;
 			return;
 		}
-		lvlindex += levelbyte(lvlindex);
+		lvlindex += levels[lvlindex];
 	}
-	if (levelbyte(lvlindex)==0) {
+	if (levels[lvlindex]==0) {
 		curlvl=1;
 		lvlindex=0;
 		return;
 	}
 }
 
-void drawlevel() {
-	unsigned char ch, bitcnt;
-	unsigned char offsetx, offsety, datacnt;
-	unsigned char curx, cury;
+static void drawlevel() {
+	u8 ch, bitcnt;
+	u8 offsetx, offsety, datacnt;
+	u8 curx, cury;
 
 	remflds=0;
 
 	SetBorderColor(bgcolor);
 
-	offsetx = (SCREEN_WIDTH/2)-(levelbyte(lvlindex+1)/2);
-	offsety = (SCREEN_HEIGHT/2)-(levelbyte (lvlindex+2)/2);
+	offsetx = (SCREEN_WIDTH/2)-(levels[lvlindex+1]/2);
+	offsety = (SCREEN_HEIGHT/2)-(levels[lvlindex+2]/2);
 
 	datacnt=0;
 	bitcnt=0;
-	ch=levelbyte(lvlindex+5+datacnt++);
-	for (cury=offsety; cury<offsety+levelbyte(lvlindex+2); cury++) {
+	ch=levels[lvlindex+5+datacnt++];
+	for (cury=offsety; cury<offsety+levels[lvlindex+2]; cury++) {
 		if (bitcnt!=0) {
-			ch = levelbyte(lvlindex+5+datacnt++);
+			ch = levels[lvlindex+5+datacnt++];
 			bitcnt=0;
 		}
-		for (curx=offsetx; curx<offsetx+levelbyte(lvlindex+1); curx++) {
+		for (curx=offsetx; curx<offsetx+levels[lvlindex+1]; curx++) {
 			if ((ch & 0x80) == 0) {
 				aram[ramaddr(curx, cury)]=BLACK;
 				remflds++;
 			}
 			ch = ch<<1;
 			if (++bitcnt == 8) {
-				ch = levelbyte(lvlindex+5+datacnt++);
+				ch = levels[lvlindex+5+datacnt++];
 				bitcnt=0;
 			}
 		}
 	}
 
-	cursorx = offsetx+levelbyte(lvlindex+3);
-	cursory = offsety+levelbyte(lvlindex+4);
+	cursorx = offsetx+levels[lvlindex+3];
+	cursory = offsety+levels[lvlindex+4];
 
 	PrintChar(cursorx, cursory, 0x57);
 	aram[ramaddr(cursorx, cursory)]=bgcolor;
@@ -223,8 +206,8 @@ void drawlevel() {
 	MoveCnt=0;
 }
 
-void do_move(char dir) {
-	char moved=false;
+static void do_move(u8 dir) {
+	u8 moved=false;
  switch (dir) {
 	case RIGHT:
 		while (aram[ramaddr(cursorx+1, cursory)]!=WALLCOL) {
@@ -286,10 +269,10 @@ void do_move(char dir) {
  if (moved) MoveCnt++;
 }
 
-void show_win() {
-	unsigned int btn=0;
-	unsigned char hour, minute, second;
-	unsigned int msec, curtimer;
+static void show_win() {
+	u16 btn=0;
+	u8 hour, minute, second;
+	u16 msec, curtimer;
 	char str[40];
 
 	curtimer=myTimer;
@@ -323,10 +306,10 @@ void show_win() {
 	}
 }
 
-void select_level() {
-	unsigned int btnPressed=0;
-	unsigned int btnHeld=0;
-	unsigned int btnPrev=0;
+static void select_level() {
+	u16 btnPressed=0;
+	u16 btnHeld=0;
+	u16 btnPrev=0;
 	char str[6];
 
 	printstrcol(12, 9, "*****************", ORANGE, BLACK);
@@ -362,9 +345,9 @@ void myCallbackFunc(void) {
 }
 
 int main(){
-	unsigned int btnPressed;
-	unsigned int btnHeld=0;
-	unsigned int btnPrev=0;
+	u16 btnPressed;
+	u16 btnHeld=0;
+	u16 btnPrev=0;
 	curlvl=1;
 	bgcolor=WHITE;
 
