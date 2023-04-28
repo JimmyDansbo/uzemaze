@@ -324,16 +324,12 @@ int main(){
 			btnPressed = btnHeld & (btnHeld ^ btnPrev);
 
 			if (btnPressed & BTN_RIGHT) 
-//				do_move(RIGHT);
 				do_move(1, 0);
 			else if (btnPressed & BTN_LEFT)
-//				do_move(LEFT);
 				do_move(-1, 0);
 			else if (btnPressed & BTN_UP)
-//				do_move(UP);
 				do_move(0, -1);
 			else if (btnPressed & BTN_DOWN)
-//				do_move(DOWN);
 				do_move(0, 1);
 			else if (btnPressed & BTN_X) {
 				select_level();
