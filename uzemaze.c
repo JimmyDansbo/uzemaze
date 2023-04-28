@@ -79,8 +79,8 @@ static void printstrcol(u8 x, u8 y, char *str, u8 fgc, u8 bgc) {
 static void resetPlayfield() {
 	u8 x, y;
 
-	for (y=0; y<25; y++)
-		for (x=0; x<40; x++) {
+	for (y=0; y<SCREEN_HEIGHT; y++)
+		for (x=0; x<SCREEN_WIDTH; x++) {
 			PrintChar(x, y, 0x20);
 			aram[ramaddr(x, y)]=WHITE;
 		}
@@ -119,8 +119,8 @@ static void splashscreen() {
 	u8 x, y;
 	u16 btn=0;
 
-	for (y=0;y<25;y++)
-		for (x=0;x<40;x++) {
+	for (y=0;y<SCREEN_HEIGHT;y++)
+		for (x=0;x<SCREEN_WIDTH;x++) {
 			PrintChar(x, y, ' ');
 			aram[ramaddr(x, y)]=BLACK;
 		}
@@ -206,67 +206,22 @@ static void drawlevel() {
 	MoveCnt=0;
 }
 
-static void do_move(u8 dir) {
+static void do_move(signed char x, signed char y) {
 	u8 moved=false;
- switch (dir) {
-	case RIGHT:
-		while (aram[ramaddr(cursorx+1, cursory)]!=WALLCOL) {
-			cursorx++;
-			moved=true;
-			PrintChar(cursorx-1, cursory, ' ');
-			if (aram[ramaddr(cursorx, cursory)]==BLACK) {
-				remflds--;
-				PrintByte(8, 0, remflds, true);
-			}
-			PrintChar(cursorx, cursory, 0x57);
-			aram[ramaddr(cursorx, cursory)]=bgcolor;
-			WaitVsync(1);
+	while (aram[ramaddr(cursorx+x, cursory+y)]!=WALLCOL) {
+		PrintChar(cursorx, cursory, ' ');
+		cursorx+=x;
+		cursory+=y;
+		moved=true;
+		if (aram[ramaddr(cursorx, cursory)]==BLACK) {
+			remflds--;
+			PrintByte(8, 0, remflds, true);
 		}
-		break;
-	case LEFT:
-		while (aram[ramaddr(cursorx-1, cursory)]!=WALLCOL) {
-			cursorx--;
-			moved=true;
-			PrintChar(cursorx+1, cursory, ' ');
-			if (aram[ramaddr(cursorx, cursory)]==BLACK) {
-				remflds--;
-				PrintByte(8, 0, remflds, true);
-			}
-			PrintChar(cursorx, cursory, 0x57);
-			aram[ramaddr(cursorx, cursory)]=bgcolor;
-			WaitVsync(1);
-		}
-		break;
-	case UP:
-		while (aram[ramaddr(cursorx, cursory-1)]!=WALLCOL) {
-			cursory--;
-			moved=true;
-			PrintChar(cursorx, cursory+1, ' ');
-			if (aram[ramaddr(cursorx, cursory)]==BLACK) {
-				remflds--;
-				PrintByte(8, 0, remflds, true);
-			}
-			PrintChar(cursorx, cursory, 0x57);
-			aram[ramaddr(cursorx, cursory)]=bgcolor;
-			WaitVsync(1);
-		}
-		break;
-	case DOWN:
-		while (aram[ramaddr(cursorx, cursory+1)]!=WALLCOL) {
-			cursory++;
-			moved=true;
-			PrintChar(cursorx, cursory-1, ' ');
-			if (aram[ramaddr(cursorx, cursory)]==BLACK) {
-				remflds--;
-				PrintByte(8, 0, remflds, true);
-			}
-			PrintChar(cursorx, cursory, 0x57);
-			aram[ramaddr(cursorx, cursory)]=bgcolor;
-			WaitVsync(1);
-		}
-		break;
- }
- if (moved) MoveCnt++;
+		PrintChar(cursorx, cursory, 0x57);
+		aram[ramaddr(cursorx, cursory)]=bgcolor;
+		WaitVsync(1);
+	}
+	if (moved) MoveCnt++;
 }
 
 static void show_win() {
@@ -369,13 +324,17 @@ int main(){
 			btnPressed = btnHeld & (btnHeld ^ btnPrev);
 
 			if (btnPressed & BTN_RIGHT) 
-				do_move(RIGHT);
+//				do_move(RIGHT);
+				do_move(1, 0);
 			else if (btnPressed & BTN_LEFT)
-				do_move(LEFT);
+//				do_move(LEFT);
+				do_move(-1, 0);
 			else if (btnPressed & BTN_UP)
-				do_move(UP);
+//				do_move(UP);
+				do_move(0, -1);
 			else if (btnPressed & BTN_DOWN)
-				do_move(DOWN);
+//				do_move(DOWN);
+				do_move(0, 1);
 			else if (btnPressed & BTN_X) {
 				select_level();
 				btnPressed=BTN_SELECT;
