@@ -76,6 +76,17 @@ static void printstrcol(u8 x, u8 y, char *str, u8 fgc, u8 bgc) {
 		PrintChar(x++, y, ch);
 	}
 }
+char* names[5] ={
+	"WANDERINGHEIHO",
+	"WOLFMAN2000",
+	"STINGX2",
+	"PINGUUPINGUU",
+	"BLAZEKICKN"
+};
+static char* GetUser(u8 target){
+	if(target - 1 <= 4) return names[target - 1];
+	else return "NULL";
+}
 static void resetPlayfield() {
 	u8 x, y;	
 	for (y=0; y<SCREEN_HEIGHT; y++)
@@ -91,9 +102,8 @@ static void resetPlayfield() {
 		}
 	printstrfg(1,0,"FLDS:      ", RED); 
 	PrintByte(8,0,0,true);	
-	printstrfg((SCREEN_WIDTH/2)-(4),0,"UZEMAZE", RED);
-	printstrfg((SCREEN_WIDTH-8),0,"LVL:   ", RED);
-	PrintByte(SCREEN_WIDTH-2, 0, curlvl, true);
+	printstrfg((SCREEN_WIDTH/2) + 1,0,"LVL:   ", RED);
+	printstrfg((SCREEN_WIDTH/2) + 5,0, GetUser(curlvl), RED);
 	printstrfg((SCREEN_WIDTH/2)-15,24,"DPAD=MOVE B=NEXT SELECT=RESET", RED);
 }
 static void nextbgcolor() {
