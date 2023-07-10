@@ -5,7 +5,7 @@
 #include <avr/pgmspace.h>
 #include <uzebox.h>
 #include <string.h>
-#include "levels.h"
+#include "levels-ra.h"
 
 #define SCREEN_WIDTH 40
 #define SCREEN_HEIGHT 25
