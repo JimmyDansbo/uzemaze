@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 #include <uzebox.h>
-
+#include <string.h>
 #include "levels.h"
 
 #define SCREEN_WIDTH 40
@@ -83,9 +83,8 @@ char* names[5] ={
 	"PINGUUPINGUU",
 	"BLAZEKICKN"
 };
-static char* GetUser(u8 target){
-	if(target - 1 <= 4) return names[target - 1];
-	else return "NULL";
+static void GetUser(u8 target){
+	if(target - 1 <= 4) printstrfg(SCREEN_WIDTH - strlen(names[target - 1]) - 1,0, names[target - 1], RED);		
 }
 static void resetPlayfield() {
 	u8 x, y;	
@@ -101,9 +100,8 @@ static void resetPlayfield() {
 			aram[ramaddr(x, y)+1]=BLACK;
 		}
 	printstrfg(1,0,"FLDS:      ", RED); 
-	PrintByte(8,0,0,true);	
-	printstrfg((SCREEN_WIDTH/2) + 1,0,"LVL:   ", RED);
-	printstrfg((SCREEN_WIDTH/2) + 5,0, GetUser(curlvl), RED);
+	PrintByte(8,0,0,true);
+	GetUser(curlvl);
 	printstrfg((SCREEN_WIDTH/2)-15,24,"DPAD=MOVE B=NEXT SELECT=RESET", RED);
 }
 static void nextbgcolor() {
