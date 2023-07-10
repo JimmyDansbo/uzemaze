@@ -27,7 +27,8 @@
 #define LIGHTGREEN	0x7C
 #define LIGHTBLUE	0xDA
 #define LIGHTGRAY	0xAD
-
+#define RA_BLUE 0xD8
+#define RA_GOLD 0x26
 #define LEFT	0
 #define RIGHT	1
 #define UP	2
@@ -75,10 +76,8 @@ static void printstrcol(u8 x, u8 y, char *str, u8 fgc, u8 bgc) {
 		PrintChar(x++, y, ch);
 	}
 }
-
 static void resetPlayfield() {
-	u8 x, y;
-
+	u8 x, y;	
 	for (y=0; y<SCREEN_HEIGHT; y++)
 		for (x=0; x<SCREEN_WIDTH; x++) {
 			PrintChar(x, y, 0x20);
@@ -90,15 +89,13 @@ static void resetPlayfield() {
 			aram[ramaddr(x, y)]=WALLCOL;
 			aram[ramaddr(x, y)+1]=BLACK;
 		}
-
-	printstrfg(1,0,"FLDS:      ", RED);
-	PrintByte(8,0,0,true);
+	printstrfg(1,0,"FLDS:      ", RED); 
+	PrintByte(8,0,0,true);	
 	printstrfg((SCREEN_WIDTH/2)-(4),0,"UZEMAZE", RED);
 	printstrfg((SCREEN_WIDTH-8),0,"LVL:   ", RED);
 	PrintByte(SCREEN_WIDTH-2, 0, curlvl, true);
 	printstrfg((SCREEN_WIDTH/2)-15,24,"DPAD=MOVE B=NEXT SELECT=RESET", RED);
 }
-
 static void nextbgcolor() {
 	switch (bgcolor) {
 		case WHITE:	bgcolor=RED;	break;
@@ -114,7 +111,6 @@ static void nextbgcolor() {
 		case LIGHTBLUE:	bgcolor=WHITE;	break;
 	}
 }
-
 static void splashscreen() {
 	u8 x, y;
 	u16 btn=0;
@@ -124,24 +120,24 @@ static void splashscreen() {
 			PrintChar(x, y, ' ');
 			aram[ramaddr(x, y)]=BLACK;
 		}
-	
 	printstrfg(3, 5,  "*  * **** **** *  *  **  **** ****", ORANGE);
 	printstrfg(3, 6,  "*  *   ** *    **** *  *   ** *", ORANGE);
 	printstrfg(3, 7,  "*  *  **  ***  *  * ****  **  **", ORANGE);
 	printstrfg(3, 8,  "*  * **   *    *  * *  * **   *", ORANGE);
 	printstrfg(3, 9,  " **  **** **** *  * *  * **** ****", ORANGE);
 	printstrfg((SCREEN_WIDTH/2)-12, 13, "PRESS START TO BEGIN GAME", WHITE);
-	printstrfg((SCREEN_WIDTH/2)-11, 17, "CREATED BY JIMMY DANSBO", GREEN);
-	printstrfg((SCREEN_WIDTH/2)-11, 19, "(JIMMY@DANSBO.DK)  2023", GREEN);
-	printstrfg((SCREEN_WIDTH/2)-15, 21, "HTTPS://GITHUB.COM/JIMMYDANSBO/", LIGHTGREEN);
-
+	printstrfg((SCREEN_WIDTH/2)-11, 16, "HACK BY PINGUUPINGUU", WHITE);
+	printstrfg((SCREEN_WIDTH/2)-11, 19, "MAPS MADE BY    USERS", WHITE);
+	printstrfg((SCREEN_WIDTH/2)+2, 19, "R", RA_BLUE);
+	printstrfg((SCREEN_WIDTH/2)+3, 19, "A", RA_GOLD);
+	printstrfg((SCREEN_WIDTH/2)-15, 23, "HTTPS://RETRO", RA_BLUE);
+	printstrfg((SCREEN_WIDTH/2)-2, 23, "ACHIEVEMENTS.ORG", RA_GOLD);
 	while (btn != BTN_START) {
 		WaitVsync(1);
 		nextbgcolor();
 		btn=ReadJoypad(0);
 	}
 }
-
 static void seeklevel() {
 	u8 lvl=1;
 
@@ -161,19 +157,14 @@ static void seeklevel() {
 		return;
 	}
 }
-
 static void drawlevel() {
 	u8 ch, bitcnt;
 	u8 offsetx, offsety, datacnt;
 	u8 curx, cury;
-
 	remflds=0;
-
 	SetBorderColor(bgcolor);
-
 	offsetx = (SCREEN_WIDTH/2)-(levels[lvlindex+1]/2);
 	offsety = (SCREEN_HEIGHT/2)-(levels[lvlindex+2]/2);
-
 	datacnt=0;
 	bitcnt=0;
 	ch=levels[lvlindex+5+datacnt++];
@@ -194,10 +185,8 @@ static void drawlevel() {
 			}
 		}
 	}
-
 	cursorx = offsetx+levels[lvlindex+3];
 	cursory = offsety+levels[lvlindex+4];
-
 	PrintChar(cursorx, cursory, 0x57);
 	aram[ramaddr(cursorx, cursory)]=bgcolor;
 	remflds--;
@@ -223,7 +212,6 @@ static void do_move(signed char x, signed char y) {
 	}
 	if (moved) MoveCnt++;
 }
-
 static void show_win() {
 	u16 btn=0;
 	u8 hour, minute, second;
@@ -260,13 +248,11 @@ static void show_win() {
 		btn=ReadJoypad(0);
 	}
 }
-
 static void select_level() {
 	u16 btnPressed=0;
 	u16 btnHeld=0;
 	u16 btnPrev=0;
 	char str[6];
-
 	printstrcol(12, 9, "*****************", ORANGE, BLACK);
 	printstrcol(12,10, "*               *", ORANGE, BLACK);
 	printstrcol(12,11, "* SELECT LEVEL: *", ORANGE, BLACK);
@@ -276,7 +262,6 @@ static void select_level() {
 	printstrcol(12,15, "*****************", ORANGE, BLACK);
 	sprintf(str, "%03d", curlvl);
 	printstr(19, 13, str);
-
 	while (btnPressed != BTN_SELECT) {
 		WaitVsync(1);
 		btnHeld = ReadJoypad(0);
@@ -294,24 +279,19 @@ static void select_level() {
 		btnPrev = btnHeld;
 	}
 }
-
 void myCallbackFunc(void) {
 	myTimer++;
 }
-
 int main(){
 	u16 btnPressed;
 	u16 btnHeld=0;
 	u16 btnPrev=0;
 	curlvl=1;
 	bgcolor=WHITE;
-
 	ClearVram();
 	SetBorderColor(LIGHTGRAY);
 	SetUserPreVsyncCallback(&myCallbackFunc);
-
 	splashscreen();
-
 	while (1) {
 		seeklevel();
 		resetPlayfield();
@@ -319,10 +299,8 @@ int main(){
 		btnPressed=0;
 		while (btnPressed != BTN_SELECT) {
 			WaitVsync(1);
-
 			btnHeld = ReadJoypad(0);
 			btnPressed = btnHeld & (btnHeld ^ btnPrev);
-
 			if (btnPressed & BTN_RIGHT) 
 				do_move(1, 0);
 			else if (btnPressed & BTN_LEFT)
