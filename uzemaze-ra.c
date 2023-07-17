@@ -76,15 +76,12 @@ static void printstrcol(u8 x, u8 y, char *str, u8 fgc, u8 bgc) {
 		PrintChar(x++, y, ch);
 	}
 }
-char* names[5] ={
-	"WANDERINGHEIHO",
-	"WOLFMAN2000",
-	"STINGX2",
-	"PINGUUPINGUU",
-	"BLAZEKICKN"
+char* names[2] ={
+	"HEXADIGITAL",
+	"STINGX2"
 };
 static void GetUser(u8 target){
-	if(target - 1 <= 4) printstrfg(SCREEN_WIDTH - strlen(names[target - 1]) - 1,0, names[target - 1], RED);		
+	printstrfg(SCREEN_WIDTH - strlen(names[target - 1]) - 1,0, names[target - 1], RED);		
 }
 static void resetPlayfield() {
 	u8 x, y;	
