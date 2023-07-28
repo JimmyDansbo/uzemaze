@@ -76,14 +76,17 @@ static void printstrcol(u8 x, u8 y, char *str, u8 fgc, u8 bgc) {
 		PrintChar(x++, y, ch);
 	}
 }
-char* names[7] ={
+char* names[10] ={
 	"HEXADIGITAL",
 	"STINGX2",
 	"DAROACHIE",
 	"XALERZYX",
 	"SUTARION",
 	"BRYAN1150",
-	"ELDRIDGECRIMSON"
+	"ELDRIDGECRIMSON",
+	"1STPRIZE",
+	"MARIOKNESS",
+	"NEOMAR"
 };
 static void GetUser(u8 target){
 	printstrfg(SCREEN_WIDTH - strlen(names[target - 1]) - 1,0, names[target - 1], RED);		
