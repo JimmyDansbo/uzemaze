@@ -107,7 +107,7 @@ below to see how they are done or you can contact the author of this program
 on the Uzebox forum or mail: jimmy at dansbo.dk
 */
 
-#define MAX_LEVELS 13
+#define MAX_LEVELS 14
 const u8 __flash levels[] = {
 // Level 1 - Hexadigital - 59 moves
 59,18,18,		//size,width,height
@@ -322,7 +322,7 @@ const u8 __flash levels[] = {
 0b11000111,0b11111110,0b00111111,
 
 
-// Level 11 - ZeeRA
+// Level 11 - ZeeRA - 35 moves
 59, 20, 18,
 7,12,
 0b11000000,0b00000000,0b00111111,
@@ -344,7 +344,7 @@ const u8 __flash levels[] = {
 0b11101111,0b11111111,0b01111111,
 0b11100000,0b00000000,0b01111111,
 
-// Level 12 - Labuff
+// Level 12 - Labuff - 21 moves
 27, 16, 11,
 10,6,
 0b11111000,0b00000000,
@@ -359,9 +359,9 @@ const u8 __flash levels[] = {
 0b11111011,0b11111110,
 0b11111000,0b00000000,
 
-//Level 13 - Triforce
+//Level 13 - Triforce - 53 moves
 59, 18, 18,
-2,1,
+2,0,
 0b00000011,0b11110000,0b00111111,
 0b01111000,0b00000111,0b10111111,
 0b01111111,0b11110111,0b10111111,
@@ -380,6 +380,21 @@ const u8 __flash levels[] = {
 0b01111011,0b11111111,0b10111111,
 0b01111000,0b00000111,0b10111111,
 0b00000011,0b11110000,0b00111111,
+
+//Level 14 - LadyLumina
+35, 19, 10,
+2,0,
+0b11000001,0b11111100,0b00011111,
+0b00000001,0b11110000,0b00011111,
+0b01011101,0b11110101,0b11011111,
+0b00011101,0b11110001,0b11011111,
+0b01111101,0b11110111,0b11011111,
+0b01111101,0b11110111,0b11011111,
+0b00111001,0b11110011,0b10011111,
+0b10000011,0b11111000,0b00111111,
+0b11111001,0b11110011,0b11111111,
+0b11111100,0b00000111,0b11111111,
+
 
 // No more level
 0				// When size 0, there are no more mazes.
