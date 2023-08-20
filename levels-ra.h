@@ -107,7 +107,7 @@ below to see how they are done or you can contact the author of this program
 on the Uzebox forum or mail: jimmy at dansbo.dk
 */
 
-#define MAX_LEVELS 14
+#define MAX_LEVELS 15
 const u8 __flash levels[] = {
 // Level 1 - Hexadigital - 59 moves
 59,18,18,		//size,width,height
@@ -394,6 +394,25 @@ const u8 __flash levels[] = {
 0b10000011,0b11111000,0b00111111,
 0b11111001,0b11110011,0b11111111,
 0b11111100,0b00000111,0b11111111,
+
+//Level 15 - pinguupinguu
+33,15,14,
+7,13,
+
+0b10000001,0b00000011,
+0b00111101,0b01111001,
+0b01111100,0b01111101,
+0b01111111,0b11111101,
+0b01111111,0b11111101,
+0b01111111,0b11111101,
+0b01111111,0b11111101,
+0b00111111,0b11111001,
+0b10011111,0b11110011,
+0b11001111,0b11100111,
+0b11100111,0b11001111,
+0b11110011,0b10011111,
+0b11111001,0b00111111,
+0b11111100,0b01111111,
 
 
 // No more level
